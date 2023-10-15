@@ -15,28 +15,15 @@ namespace TeamGPT
     {
         static void Main(string[] args)
         {
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.Console()
-                .WriteTo.File("logs/.log", rollingInterval: RollingInterval.Day) // daily log files
-                .CreateLogger();
-        
-            // Create a new service collection
-            var serviceCollection = new ServiceCollection();
-            var configuration = BuildConfiguration();
+            // Create a new service collection & configuration
+            var appSettings = Configurator.ConfigureApplication();
 
-            ConfigureServices(serviceCollection, configuration);
-
-            // Create a service provider from the service collection
-            var serviceProvider = serviceCollection.BuildServiceProvider();
-
-            // Use the service provider to retrieve services and run your application logic
-            var appSettings = serviceProvider.GetRequiredService<ApplicationSettings>();
             Console.WriteLine($"App Name: {appSettings.ApplicationName}");
             Console.WriteLine($"Version: {appSettings.Version}");
-            Console.WriteLine($"Default Directive: {appSettings.DefaultDirective}"); 
-            var default_directive = appSettings.DefaultDirective;
+            Console.WriteLine($"Default Directive: {appSettings.DefaultDirective}");
 
             // Get the main directive from the user
+            var default_directive = appSettings.DefaultDirective;
             string? main_directive = null;
             try
             {
@@ -104,64 +91,6 @@ namespace TeamGPT
 
             // Cleanup the log
             Log.CloseAndFlush();
-        }
-
-        private static IConfiguration BuildConfiguration()
-        {
-            return new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
-        }
-
-        private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
-        {
-            // Add logging
-            services.AddLogging(builder => 
-            {
-                builder.AddConsole();
-            });
-
-            // Register Logger Configuration
-            services.Configure<Logger.LoggingConfiguration>(configuration.GetSection("ApplicationSettings:Logging"));
-
-            // Register singleton for Logger
-            services.AddSingleton<Logger>(sp => 
-            {
-                var loggingConfig = sp.GetRequiredService<IOptions<Logger.LoggingConfiguration>>().Value;
-                var logger = sp.GetRequiredService<ILogger<Logger>>();
-                return new Logger(logger);
-            });
-
-            services.AddLogging(builder => 
-            {
-                builder.AddConsole();
-                builder.AddSerilog();
-            });
-
-            // Register ApplicationSettings with DI handling the instantiation
-            services.AddSingleton<ApplicationSettings>(sp => 
-            {
-                var settings = new TeamGPT.Utilities.ApplicationSettings(sp.GetRequiredService<Logger>());
-                configuration.GetSection("ApplicationSettings").Bind(settings);
-                return settings;
-            });
-
-            // Register Models classes
-            services.AddSingleton<Team>();
-            services.AddSingleton<Human>();
-            services.AddSingleton<Brain>();
-            services.AddSingleton<Thought>();
-
-            // Register Services classes
-            services.AddSingleton<Services.OAI>();
-
-            // Register Tasks classes
-            services.AddSingleton<Activity>();
-            services.AddSingleton<Objective>();
-
-            // Register ErrorHandler
-            services.AddSingleton<ErrorHandler>();
         }
     }
 }
