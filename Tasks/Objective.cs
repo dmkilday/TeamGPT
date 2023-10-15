@@ -1,4 +1,6 @@
-namespace TeamGPT.Models
+using TeamGPT.Models;
+
+namespace TeamGPT.Tasks
 {
     public class Objective
     {

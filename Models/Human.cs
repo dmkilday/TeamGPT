@@ -1,16 +1,23 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using TeamGPT.Utilities;
+using TeamGPT.Tasks;
+
 namespace TeamGPT.Models
 {
     public class Human
     {
+        private readonly ApplicationSettings _settings;
         public string Name { get; private set; } 
         private Brain Brain;
         public Team Team { get; private set; }
         public Objective? Objective { get; private set; }
         public Activity? CurrentActivity { get; private set; }
 
-        public Human(string name, Persona persona, Team team, string apiKey)
+        public Human(ApplicationSettings settings, string name, Persona persona, Team team)
         {
-            this.Brain = new(this, persona, apiKey);
+            this._settings = settings;
+            this.Brain = new(_settings, this, persona);
             this.Name = name;
             this.Team = team;
             this.Team.AddMember(this); // Add me to the team!
@@ -93,7 +100,7 @@ namespace TeamGPT.Models
         {
             // Stub out the activity for now
             // TODO: Call ChatGPT to get list.
-            objective.AddActivity(new Activity(objective, this, objective.Goal));
+            objective.AddActivity(new Activity(this._settings, objective, this, objective.Goal));
         }
 
         // Initiate process to do the activities for my current objective
