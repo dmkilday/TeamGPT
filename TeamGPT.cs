@@ -13,6 +13,29 @@ namespace TeamGPT
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
             var configuration = builder.Build();
             var apiKey = configuration["CustomConfig:ApiKey"];
+            var default_directive = configuration["CustomConfig:DefaultDirective"];
+
+            // Get the main directive from the user
+            string? main_directive = null;
+            try
+            {
+                main_directive = args[0];
+                Console.WriteLine($"Received main directive '{main_directive}'");
+            }
+            catch (IndexOutOfRangeException e)
+            {
+                Console.WriteLine($"Main directive not provided. Defaulting to '{default_directive}'");
+                main_directive = default_directive;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"ERROR: An unhandled exception occured. Error Message: {e.Message}");
+                Console.WriteLine("Exiting the application...");
+                Environment.Exit(1); // Exit the application with an error code of 1
+            }
+                
+            // Build the team
+            Console.WriteLine("Building optimal team for the directive provided...");
 
             // Create personas
             var engineer = new Persona
@@ -33,14 +56,19 @@ namespace TeamGPT
 
             // Create the team
             Team team = new Team();
-            var alice = new Human("Alice", engineer, team, apiKey);
-            Console.WriteLine(alice);
+            var alice = new Human("Alice", engineer, team, apiKey);            
             var bob = new Human("Bob", artist, team, apiKey);
-            Console.WriteLine(bob);
+
+            // Display team
+            Console.WriteLine();
+            Console.WriteLine("Team Composition:");
+            foreach (Human member in team.Members)
+            {
+                Console.WriteLine(member);
+            }
 
             // Create objective & assign to Bob
-            string goal = "Give me the best steps to create an oil painting if it's my very first painting.";
-            Objective objective = new Objective(null, conceiver: alice, goal: goal);
+            Objective objective = new Objective(null, conceiver: alice, goal: main_directive);
             alice.Assign(objective, bob);
             
             // Output the task outcome
