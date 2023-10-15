@@ -4,11 +4,13 @@ namespace TeamGPT.Utilities
 {
     public class Logger
     {
+        private readonly ApplicationSettings _settings;
         private readonly ILogger _logger;
 
-        public Logger(ILogger<Logger> logger)
+        public Logger(ApplicationSettings settings, ILogger<Logger> logger)
         {
-            _logger = logger;
+            this._settings = settings;
+            this._logger = logger;
         }
 
         public void LogInformation(string message)

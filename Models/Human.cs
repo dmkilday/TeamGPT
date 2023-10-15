@@ -46,7 +46,6 @@ namespace TeamGPT.Models
         public void ReceiveAssignment(Objective objective)
         {
             this.Objective = objective;
-            //objective.Assignee = this;
             this.Objective.IsDecomposable = this.DetermineDecomposability(objective);
             if (this.Objective.IsDecomposable != null)
             {
@@ -90,9 +89,9 @@ namespace TeamGPT.Models
             
             // Stub out the list for now
             // TODO: Call ChatGPT to get list.
-            sub_objectives.Add(new Objective(objective, this, "Sub Objective #1"));
-            sub_objectives.Add(new Objective(objective, this, "Sub Objective #2"));
-            sub_objectives.Add(new Objective(objective, this, "Sub Objective #3"));
+            sub_objectives.Add(new Objective(this._settings, objective, this, "Sub Objective #1"));
+            sub_objectives.Add(new Objective(this._settings, objective, this, "Sub Objective #2"));
+            sub_objectives.Add(new Objective(this._settings, objective, this, "Sub Objective #3"));
             return sub_objectives;
         }
 

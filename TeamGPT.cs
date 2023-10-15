@@ -26,7 +26,6 @@ namespace TeamGPT
             Console.WriteLine($"App Name: {appSettings.ApplicationName}");
             Console.WriteLine($"Version: {appSettings.Version}");
             Console.WriteLine($"Default Directive: {appSettings.DefaultDirective}"); 
-            var apiKey = appSettings.ApiKey;
             var default_directive = appSettings.DefaultDirective;
 
             // Get the main directive from the user
@@ -82,7 +81,7 @@ namespace TeamGPT
             }
 
             // Create objective & assign to Bob
-            Objective objective = new Objective(null, conceiver: alice, goal: main_directive);
+            Objective objective = new Objective(appSettings, null, conceiver: alice, goal: main_directive);
             alice.Assign(objective, bob);
             
             // Output the task outcome

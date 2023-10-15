@@ -1,9 +1,11 @@
 using TeamGPT.Models;
+using TeamGPT.Utilities;
 
 namespace TeamGPT.Tasks
 {
     public class Objective
     {
+        private readonly ApplicationSettings _settings;        
         public Human Conceiver { get; private set; }  
         public string Goal { get; private set; }
         public bool? IsDecomposable { get; set; }
@@ -14,8 +16,9 @@ namespace TeamGPT.Tasks
         public List<Activity> Activities { get; private set; }
         public bool IsComplete => Activities.All(activity => activity.IsComplete);
 
-        public Objective(Objective? parent, Human conceiver, string goal)
+        public Objective(ApplicationSettings settings, Objective? parent, Human conceiver, string goal)
         {
+            this._settings = settings;
             this.Conceiver = conceiver;
             this.Assignee = null;
             this.Parent = parent;

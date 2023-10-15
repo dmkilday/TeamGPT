@@ -2,11 +2,13 @@ namespace TeamGPT.Utilities
 {
     public class ErrorHandler
     {
+        private readonly ApplicationSettings _settings;
         private readonly Logger _logger;
 
-        public ErrorHandler(Logger logger)
+        public ErrorHandler(ApplicationSettings settings, Logger logger)
         {
-            _logger = logger;
+            this._settings = settings;
+            this._logger = logger;
         }
 
         public void Handle(Exception ex)
