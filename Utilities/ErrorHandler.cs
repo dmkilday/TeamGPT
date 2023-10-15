@@ -1,3 +1,5 @@
+using Serilog;
+
 namespace TeamGPT.Utilities
 {
     public class ErrorHandler
@@ -5,10 +7,10 @@ namespace TeamGPT.Utilities
         private readonly ApplicationSettings _settings;
         private readonly Logger _logger;
 
-        public ErrorHandler(ApplicationSettings settings, Logger logger)
+        public ErrorHandler(ApplicationSettings settings)
         {
             this._settings = settings;
-            this._logger = logger;
+            this._logger = this._settings.LoggerInstance;
         }
 
         public void Handle(Exception ex)
@@ -17,13 +19,13 @@ namespace TeamGPT.Utilities
             switch (ex)
             {
                 case CriticalException _:
-                    _logger.LogCritical(ex);
+                    _logger.Log(Logger.CustomLogLevel.Critical, "System", $"CRITICAL ERROR: {ex.Message}");
                     break;
                 case WarningException _:
-                    _logger.LogWarning(ex);
+                    _logger.Log(Logger.CustomLogLevel.Warning, "System", $"WARNING: {ex.Message}");
                     break;
                 default:
-                    _logger.LogError(ex);
+                    _logger.Log(Logger.CustomLogLevel.Error, "System", $"UNHANDLED ERROR: {ex.Message}");
                     break;
             }
 

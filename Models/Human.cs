@@ -1,5 +1,8 @@
+using Serilog;
+
 using TeamGPT.Utilities;
 using TeamGPT.Tasks;
+using System.Dynamic;
 
 namespace TeamGPT.Models
 {
@@ -7,6 +10,7 @@ namespace TeamGPT.Models
     {
         private readonly ApplicationSettings _settings;
         private readonly Logger _logger;
+        private readonly string _logFilePath; // Store the log file path
         public string Name { get; private set; } 
         private Brain Brain;
         public Team Team { get; private set; }
@@ -17,11 +21,16 @@ namespace TeamGPT.Models
         {
             this._settings = settings;
             this._logger = settings.LoggerInstance;
+            // Store the log file path named after the human & configure their logger
+            _logFilePath = $"logs/{name}.log";
+            _logger.ConfigureLogFile(_logFilePath);
+
+            // Set remaining properties
             this.Brain = new(_settings, this, persona);
             this.Name = name;
             this.Team = team;
             this.Team.AddMember(this); // Add me to the team!
-
+            
             _logger.Log(Logger.CustomLogLevel.Information, Name, "I'm alive and reporting for duty!");
         }
 

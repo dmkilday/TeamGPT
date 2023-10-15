@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 using TeamGPT.Models;
 using TeamGPT.Utilities;
@@ -14,6 +15,11 @@ namespace TeamGPT
     {
         static void Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.File("logs/.log", rollingInterval: RollingInterval.Day) // daily log files
+                .CreateLogger();
+        
             // Create a new service collection
             var serviceCollection = new ServiceCollection();
             var configuration = BuildConfiguration();
@@ -95,6 +101,9 @@ namespace TeamGPT
                     Console.WriteLine($"Activity Outcome: {activity.Outcome}");
                 }
             }
+
+            // Cleanup the log
+            Log.CloseAndFlush();
         }
 
         private static IConfiguration BuildConfiguration()
@@ -121,7 +130,13 @@ namespace TeamGPT
             {
                 var loggingConfig = sp.GetRequiredService<IOptions<Logger.LoggingConfiguration>>().Value;
                 var logger = sp.GetRequiredService<ILogger<Logger>>();
-                return new Logger(loggingConfig, logger);
+                return new Logger(logger);
+            });
+
+            services.AddLogging(builder => 
+            {
+                builder.AddConsole();
+                builder.AddSerilog();
             });
 
             // Register ApplicationSettings with DI handling the instantiation

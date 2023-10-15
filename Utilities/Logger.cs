@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace TeamGPT.Utilities
 {
     public class Logger
     {
         private readonly LoggingConfiguration _loggingConfig;
-        private readonly ILogger _logger;
+        private readonly Microsoft.Extensions.Logging.ILogger _logger;
         public enum CustomLogLevel
         {
             Trace,
@@ -16,76 +17,65 @@ namespace TeamGPT.Utilities
             Critical
         }
 
+        private Serilog.ILogger _serilogLogger; // Remove readonly
+
         public class LoggingConfiguration
         {
             public string Default { get; set; }
             public string ErrorHandler { get; set; }
         }
 
-        public Logger(LoggingConfiguration loggingConfig, ILogger<Logger> logger)
+        public Logger(Microsoft.Extensions.Logging.ILogger<Logger> logger)
         {
-            this._loggingConfig = loggingConfig;
             this._logger = logger;
+            InitializeLogger();
         }
 
+        private void InitializeLogger()
+        {
+            _serilogLogger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateLogger();
+        }
+
+        public void ConfigureLogFile(string logFilePath)
+        {
+            // Configure the log file dynamically based on the provided log file path
+            var loggerConfiguration = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day);
+
+            // Update the Serilog logger without disposing the previous one
+            _serilogLogger = loggerConfiguration.CreateLogger();
+        }
         public void Log(CustomLogLevel logLevel, string name, string message)
         {
-            var formattedMessage = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{name}] -- {message}";
+            var formattedMessage = $"[{name}] -- {message}";
 
             switch (logLevel)
             {
                 case CustomLogLevel.Trace:
-                    _logger.LogTrace(formattedMessage);
+                    _serilogLogger.Verbose(formattedMessage);
                     break;
                 case CustomLogLevel.Debug:
-                    _logger.LogDebug(formattedMessage);
+                    _serilogLogger.Debug(formattedMessage);
                     break;
                 case CustomLogLevel.Information:
-                    _logger.LogInformation(formattedMessage);
+                    _serilogLogger.Information(formattedMessage);
                     break;
                 case CustomLogLevel.Warning:
-                    _logger.LogWarning(formattedMessage);
+                    _serilogLogger.Warning(formattedMessage);
                     break;
                 case CustomLogLevel.Error:
-                    _logger.LogError(formattedMessage);
+                    _serilogLogger.Error(formattedMessage);
                     break;
                 case CustomLogLevel.Critical:
-                    _logger.LogCritical(formattedMessage);
+                    _serilogLogger.Fatal(formattedMessage);
                     break;
                 default:
-                    _logger.LogInformation(formattedMessage);
+                    _serilogLogger.Information(formattedMessage);
                     break;
             }
-        }
-
-        public void LogDebug(string Name, string message)
-        {
-            if (_loggingConfig.Default.ToLower() == "debug")
-                _logger.LogDebug(message);
-        }
-
-        public void LogInformation(string name, string message)
-        {
-            if (_loggingConfig.Default.ToLower() == "information")
-                _logger.LogInformation(message);
-        }
-
-        public void LogWarning(Exception ex)
-        {
-            if (_loggingConfig.ErrorHandler.ToLower() == "warning")
-                _logger.LogWarning(ex, ex.Message);
-        }
-
-        public void LogError(Exception ex)
-        {
-            if (_loggingConfig.ErrorHandler.ToLower() == "error")
-                _logger.LogError(ex, ex.Message);
-        }
-
-        public void LogCritical(Exception ex)
-        {
-            if (_loggingConfig.ErrorHandler.ToLower() == "critical")
-                _logger.LogCritical(ex, ex.Message);
         }
     }
 }
