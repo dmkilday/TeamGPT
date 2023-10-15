@@ -6,9 +6,9 @@ To run this locally, pull the project down into VSCode and copy the appsettings.
 
 Requirements:
 
-1. .NET SDK: If you ahven't already installed it, you will need to download and install the .NET SDK 7.0. This can be downloaded at https://dotnet.microsoft.com/en-us/download/dotnet/7.0.
+1. .NET SDK: If you haven't already installed it, you will need to download and install the .NET SDK 7.0. This can be downloaded at https://dotnet.microsoft.com/en-us/download/dotnet/7.0.
 
-2. Extensions: If you are using VSCode, when you bring down the project and open you may be prompted to install the recommended extensions. These are found in ./vscode/extensions.json. Go ahead and install these if you are using VSCode. The extensions I have installed are (not sure if they are all required).
+2. Extensions: If you are using VSCode, when you bring down the project and open you may be prompted to install the recommended extensions. These are found in ./vscode/extensions.json. Go ahead and install these if you are using VSCode. The extensions I have installed are the following (not sure if they are all required).
 - .NET Runtime Install Tool Extension
 - C# Extension
 - C# Dev Kit Extension
@@ -17,4 +17,4 @@ Requirements:
 
 How to Run:
 
-Once you have all of the requirements fulfilled, you should be able to build and debug/run the program. The entry point for the program is the main method in TeamGPT.cs. In the Terminal go to the root directory of the project and run "dotnet build" to build the program. Then you can enter a debug session (set a breakpoint in TeamGPT.cs and hit F5) or type "dotnet run" to execute the program outside of debug.
+Once you have fulfulled the requirements, you should be able to build and debug/run the program. The entry point for the program is the main method in TeamGPT.cs. In the Terminal go to the root directory of the project and run "dotnet build" to build the program. Then you can enter a debug session (set a breakpoint in TeamGPT.cs and hit F5) or type "dotnet run" to execute the program outside of debug.
