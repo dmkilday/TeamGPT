@@ -1,6 +1,8 @@
 using System.Net.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using TeamGPT.Models;
 using TeamGPT.Utilities;
@@ -105,27 +107,46 @@ namespace TeamGPT
 
         private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
-            var settings = new ApplicationSettings();
-            configuration.GetSection("ApplicationSettings").Bind(settings);
+            // Add logging
+            services.AddLogging(builder => 
+            {
+                builder.AddConsole();
+            });
 
-            services.AddSingleton(settings); // Register your settings
+            // Register Logger Configuration
+            services.Configure<Logger.LoggingConfiguration>(configuration.GetSection("ApplicationSettings:Logging"));
+
+            // Register singleton for Logger
+            services.AddSingleton<Logger>(sp => 
+            {
+                var loggingConfig = sp.GetRequiredService<IOptions<Logger.LoggingConfiguration>>().Value;
+                var logger = sp.GetRequiredService<ILogger<Logger>>();
+                return new Logger(loggingConfig, logger);
+            });
+
+            // Register ApplicationSettings with DI handling the instantiation
+            services.AddSingleton<ApplicationSettings>(sp => 
+            {
+                var settings = new TeamGPT.Utilities.ApplicationSettings(sp.GetRequiredService<Logger>());
+                configuration.GetSection("ApplicationSettings").Bind(settings);
+                return settings;
+            });
 
             // Register Models classes
-            services.AddSingleton<Models.Team>();
-            services.AddSingleton<Models.Human>();
-            services.AddSingleton<Models.Brain>();
-            services.AddSingleton<Models.Thought>();
+            services.AddSingleton<Team>();
+            services.AddSingleton<Human>();
+            services.AddSingleton<Brain>();
+            services.AddSingleton<Thought>();
 
             // Register Services classes
             services.AddSingleton<Services.OAI>();
 
             // Register Tasks classes
-            services.AddSingleton<Tasks.Activity>();
-            services.AddSingleton<Tasks.Objective>();
+            services.AddSingleton<Activity>();
+            services.AddSingleton<Objective>();
 
-            // Register Utilities classes
-            services.AddSingleton<Utilities.Logger>();
-            services.AddSingleton<Utilities.ErrorHandler>();
-        }    
+            // Register ErrorHandler
+            services.AddSingleton<ErrorHandler>();
+        }
     }
 }

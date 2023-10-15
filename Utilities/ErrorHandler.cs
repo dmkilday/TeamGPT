@@ -13,13 +13,34 @@ namespace TeamGPT.Utilities
 
         public void Handle(Exception ex)
         {
-            // Log the exception
-            _logger.LogError(ex);
+            // Determine the error level
+            switch (ex)
+            {
+                case CriticalException _:
+                    _logger.LogCritical(ex);
+                    break;
+                case WarningException _:
+                    _logger.LogWarning(ex);
+                    break;
+                default:
+                    _logger.LogError(ex);
+                    break;
+            }
 
             // You can extend this to decide what to do next.
-            // E.g., you might want to re-throw, or gracefully shut down parts of your application, etc.
         }
     }
 }
+    public class CriticalException : Exception
+    {
+        public CriticalException() { }
+        public CriticalException(string message) : base(message) { }
+        public CriticalException(string message, Exception inner) : base(message, inner) { }
+    }
 
-
+    public class WarningException : Exception
+    {
+        public WarningException() { }
+        public WarningException(string message) : base(message) { }
+        public WarningException(string message, Exception inner) : base(message, inner) { }
+    }

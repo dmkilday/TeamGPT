@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
 using TeamGPT.Utilities;
 using TeamGPT.Tasks;
 
@@ -8,19 +6,23 @@ namespace TeamGPT.Models
     public class Human
     {
         private readonly ApplicationSettings _settings;
+        private readonly Logger _logger;
         public string Name { get; private set; } 
         private Brain Brain;
         public Team Team { get; private set; }
         public Objective? Objective { get; private set; }
-        public Activity? CurrentActivity { get; private set; }
+        public Tasks.Activity? CurrentActivity { get; private set; }
 
         public Human(ApplicationSettings settings, string name, Persona persona, Team team)
         {
             this._settings = settings;
+            this._logger = settings.LoggerInstance;
             this.Brain = new(_settings, this, persona);
             this.Name = name;
             this.Team = team;
             this.Team.AddMember(this); // Add me to the team!
+
+            _logger.Log(Logger.CustomLogLevel.Information, Name, "I'm alive and reporting for duty!");
         }
 
         public Persona? GetPersona()
@@ -54,6 +56,14 @@ namespace TeamGPT.Models
                 {
                     // Determine activities and add to objective
                     this.IdentifyActivities(objective);
+
+                    // Log the activity
+                    string activities = "";
+                    foreach (Tasks.Activity activity in Objective.Activities)
+                    {
+                        activities += $"\n -- {activity.Description}";
+                    }
+                    _logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Determined objective is atomic - created the following activities...{activities}");
 
                     // Now that I have my activities I can start working
                     this.Work();
@@ -99,7 +109,7 @@ namespace TeamGPT.Models
         {
             // Stub out the activity for now
             // TODO: Call ChatGPT to get list.
-            objective.AddActivity(new Activity(this._settings, objective, this, objective.Goal));
+            objective.AddActivity(new Tasks.Activity(this._settings, objective, this, objective.Goal));
         }
 
         // Initiate process to do the activities for my current objective
@@ -109,7 +119,7 @@ namespace TeamGPT.Models
             {
                 if(!this.Objective.IsComplete)
                 {
-                    foreach(Activity activity in this.Objective.Activities)
+                    foreach(Tasks.Activity activity in this.Objective.Activities)
                     {
                         // Only work on incomplete activities
                         if (!activity.IsComplete)
@@ -121,7 +131,7 @@ namespace TeamGPT.Models
             }
         }
 
-        private void Do(Activity activity)
+        private void Do(Tasks.Activity activity)
         {
             // Set the current activity I'm working on
             this.CurrentActivity = activity;
