@@ -142,7 +142,7 @@ namespace TeamGPT.Services
             IOpenAIService sdk = bedalgoAiService;
             Console.WriteLine("Chat Function Call Testing is starting:", ConsoleColor.Cyan);
 
-            var fn1 = new FunctionDefinitionBuilder("get_team_members", "Create a team for a given objective")
+            var fn1 = new FunctionDefinitionBuilder("get_team_member", "Identify a human for a given objective")
                 .AddParameter("name", PropertyDefinition.DefineString("The name of the team member"))
                 .AddParameter("background", PropertyDefinition.DefineString("The background of the team member (e.g., 'Engineer', 'Artist', 'Doctor')"))
                 .AddParameter("skills", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The skills of the team member (e.g., 'Programming', 'Drawing', 'Surgery')")))
@@ -150,6 +150,29 @@ namespace TeamGPT.Services
                 .AddParameter("proclivities", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The proclivities of the team member (e.g., 'Analytical', 'Creative', 'Patient')")))
                 .Validate()
                 .Build();
+
+            // Define the structure of the Human object
+            var humanDefinition = PropertyDefinition.DefineObject(
+                new Dictionary<string, PropertyDefinition>
+                {
+                    { "name", PropertyDefinition.DefineString("The name of the team member") },
+                    { "background", PropertyDefinition.DefineString("The background of the team member (e.g., 'Engineer', 'Artist', 'Doctor')") },
+                    { "skills", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The skills of the team member (e.g., 'Programming', 'Drawing', 'Surgery')")) },
+                    { "knowledgeDomains", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The knowledge domains of the team member (e.g., 'Machine Learning', 'Renaissance Art', 'Cardiology')")) },
+                    { "proclivities", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The proclivities of the team member (e.g., 'Analytical', 'Creative', 'Patient')")) }
+                },
+                required: new List<string> { "name", "background", "skills", "knowledgedomains", "proclivities" },
+                additionalProperties: false,
+                description: "Represents the attributes of a Human team member.",
+                @enum: null // Provide null for enum as it's not applicable for the Human object
+            );
+
+            // Use the Human object definition as a parameter for the get_team_members function
+            var fn2 = new FunctionDefinitionBuilder("get_team_members", "Create a team for a given objective")
+                .AddParameter("humans", PropertyDefinition.DefineArray(humanDefinition))
+                .Validate()
+                .Build();
+
             try
             {
                 Console.WriteLine("Chat Function Call Test:", ConsoleColor.DarkCyan);
@@ -160,9 +183,9 @@ namespace TeamGPT.Services
                         OpenAI.ObjectModels.RequestModels.ChatMessage.FromSystem("Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."),
                         OpenAI.ObjectModels.RequestModels.ChatMessage.FromUser($"Create the optimatel team to complete the objective: '{team_directive}'")
                     },
-                    Functions = new List<FunctionDefinition> {fn1},
+                    Functions = new List<FunctionDefinition> {fn1, fn2},
                     // optionally, to force a specific function:
-                    FunctionCall = new Dictionary<string, string> { { "name", "get_team_members" } },
+                    FunctionCall = new Dictionary<string, string> { { "name", "get_team_member" } },
                     MaxTokens = 500,
                     Model = OpenAI.ObjectModels.Models.Gpt_4
                 });
