@@ -17,7 +17,7 @@ namespace TeamGPT.Models
         public Objective? Objective { get; private set; }
         public Tasks.Activity? CurrentActivity { get; private set; }
 
-        public Human(ApplicationSettings settings, string name, Persona persona, Team team)
+        public Human(ApplicationSettings settings, string name, Persona persona)
         {
             this._settings = settings;
             this._logger = settings.LoggerInstance;
@@ -28,8 +28,6 @@ namespace TeamGPT.Models
             // Set remaining properties
             this.Brain = new(_settings, this, persona);
             this.Name = name;
-            this.Team = team;
-            this.Team.AddMember(this); // Add me to the team!
             
             _logger.Log(Logger.CustomLogLevel.Information, Name, "I'm alive and reporting for duty!");
         }
@@ -153,6 +151,18 @@ namespace TeamGPT.Models
 
             // Clear current activity
             this.CurrentActivity = null;            
+        }
+
+        public void JoinTeam(Team team)
+        {
+            this.Team = team;
+            this.Team.AddMember(this);
+        }
+
+        public async Task<Team> DefineTeam(Objective objective)
+        {
+            Team team = await this.Brain.DefineTeam(objective);
+            return team;
         }
 
         public override string ToString()

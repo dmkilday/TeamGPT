@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using TeamGPT.Services;
+using TeamGPT.Tasks;
 using TeamGPT.Utilities;
 
 namespace TeamGPT.Models
@@ -33,6 +34,19 @@ namespace TeamGPT.Models
         public List<Thought> GetThoughts()
         {
             return oai.GetThoughts();
+        }
+
+        public async Task<Team> DefineTeam(Objective objective)
+        {
+            Team team = await oai.DefineTeamFunction(objective.Goal);
+            return team;
+        }
+
+        public Choice Choose(Objective objective)
+        {
+            Choice choice = new(this._settings, objective);
+
+            return choice;
         }
     }
 }

@@ -3,21 +3,22 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Threading.Tasks;
 using Serilog;
 
 using TeamGPT.Models;
 using TeamGPT.Utilities;
 using TeamGPT.Tasks;
+using TeamGPT.Services;
 
 namespace TeamGPT
 {
     public class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             // Create a new service collection & configuration
             var appSettings = Configurator.ConfigureApplication();
-
             Console.WriteLine($"App Name: {appSettings.ApplicationName}");
             Console.WriteLine($"Version: {appSettings.Version}");
             Console.WriteLine($"Default Directive: {appSettings.DefaultDirective}");
@@ -62,10 +63,29 @@ namespace TeamGPT
                 Proclivities = new List<string> { "Creative", "Intuitive" }
             };
 
+            var solutionArchitect = new Persona
+            {
+                Background = "Solution Architect",
+                Skills = new List<string> { "Software Engineering", "Software Design", "Enterprise Architecture", "Solution Architecture" },
+                KnowledgeDomains = new List<string> { "Development Languages", "Architecture Frameworks", "Waterfall Methodology", "Agile Methdology" },
+                Proclivities = new List<string> { "Ideation", "Problem Solving", "Vision", "Empathy" }
+            };            
+
             // Create the team
-            Team team = new Team(appSettings);
-            var alice = new Human(appSettings, "Alice", engineer, team);            
-            var bob = new Human(appSettings, "Bob", artist, team);
+            Human me = new(appSettings, "Damian", solutionArchitect);
+            TeamBuilder tb = new(appSettings, me);
+            Objective main_objective = new Objective(appSettings, null, conceiver: me, goal: main_directive);
+            Team team = await tb.Build(main_objective);
+
+            //Team team = new Team(appSettings);
+            var alice = new Human(appSettings, "Alice", engineer);
+            alice.JoinTeam(team);
+            var bob = new Human(appSettings, "Bob", artist);
+            bob.JoinTeam(team);
+
+            // Create temp Human
+            OAI oai = new(appSettings, new Brain(appSettings, me, solutionArchitect));
+            await oai.RunChatFunctionCallTest();
 
             // Display team
             Console.WriteLine();
