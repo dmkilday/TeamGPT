@@ -75,17 +75,13 @@ namespace TeamGPT
             Human me = new(appSettings, "Damian", solutionArchitect);
             TeamBuilder tb = new(appSettings, me);
             Objective main_objective = new Objective(appSettings, null, conceiver: me, goal: main_directive);
-            Team team = await tb.Build(main_objective);
+            Team team = await tb.Build(main_objective); // Create a new team based on the main_objective
 
             //Team team = new Team(appSettings);
-            var alice = new Human(appSettings, "Alice", engineer);
-            alice.JoinTeam(team);
-            var bob = new Human(appSettings, "Bob", artist);
-            bob.JoinTeam(team);
-
-            // Create temp Human
-            OAI oai = new(appSettings, new Brain(appSettings, me, solutionArchitect));
-            await oai.RunChatFunctionCallTest();
+            // var alice = new Human(appSettings, "Alice", engineer);
+            // alice.JoinTeam(team);
+            // var bob = new Human(appSettings, "Bob", artist);
+            // bob.JoinTeam(team);
 
             // Display team
             Console.WriteLine();
@@ -96,14 +92,15 @@ namespace TeamGPT
             }
 
             // Create objective & assign to Bob
-            Objective objective = new Objective(appSettings, null, conceiver: alice, goal: main_directive);
-            alice.Assign(objective, bob);
+            Objective objective = new Objective(appSettings, null, conceiver: me, goal: main_directive);
+            Human assignee = team.Members[0];
+            me.Assign(objective, assignee);
             
             // Output the task outcome
-            if (bob.Objective.IsComplete)
+            if (assignee.Objective.IsComplete)
             {
-                Console.WriteLine($"{bob.Name} has finished the Objective '{objective.Goal}'.");
-                foreach (Activity activity in bob.Objective.Activities)
+                Console.WriteLine($"{assignee.Name} has finished the Objective '{objective.Goal}'.");
+                foreach (Activity activity in assignee.Objective.Activities)
                 {
                     Console.WriteLine($"Activity Outcome: {activity.Outcome}");
                 }

@@ -9,6 +9,7 @@ using OpenAI.ObjectModels.SharedModels;
 using OpenAI.Interfaces;
 using OpenAI.Managers;
 using System.ComponentModel;
+using System.Text.Json;
 
 namespace TeamGPT.Services
 {
@@ -185,7 +186,7 @@ namespace TeamGPT.Services
                     },
                     Functions = new List<FunctionDefinition> {fn1, fn2},
                     // optionally, to force a specific function:
-                    FunctionCall = new Dictionary<string, string> { { "name", "get_team_member" } },
+                    FunctionCall = new Dictionary<string, string> { { "name", "get_team_members" } },
                     MaxTokens = 500,
                     Model = OpenAI.ObjectModels.Models.Gpt_4
                 });
@@ -198,56 +199,40 @@ namespace TeamGPT.Services
                     format: celsius
                     num_days: 5
                 */
-
                 if (completionResult.Successful)
                 {
                     var choice = completionResult.Choices.First();
                     Console.WriteLine($"Message:        {choice.Message.Content}");
 
                     var fn = choice.Message.FunctionCall;
-                    if (fn != null)
+                    if (fn != null && fn.Name == "get_team_members")
                     {
                         Console.WriteLine($"Function call:  {fn.Name}");
-                        string name = "";
-                        string background = "";
-                        List<string> skills = null;
-                        List<string> knowledgeDomains = null;
-                        List<string> proclivities = null;
-                        foreach (var entry in fn.ParseArguments())
+                        var humansListData = fn.ParseArguments()["humans"];
+
+                        if (humansListData is JsonElement humansElement && humansElement.ValueKind == JsonValueKind.Array)
                         {
-                            Console.WriteLine($"  {entry.Key}: {entry.Value}");
-                            switch(entry.Key)
+                            foreach (var humanData in humansElement.EnumerateArray())
                             {
-                                case "name":
-                                    name = entry.Value.ToString();
-                                    break;
-                                case "background":
-                                    background = entry.Value.ToString();
-                                    break;
-                                case "skills":
-                                    skills = convertToList(entry.Value);
-                                    break;
-                                case "knowledgedomains":
-                                    knowledgeDomains = convertToList(entry.Value);
-                                    break;
-                                case "proclivities":
-                                    proclivities = convertToList(entry.Value);
-                                    break;
-                                default:
-                                    break;
+                                string name = humanData.GetProperty("name").GetString();
+                                string background = humanData.GetProperty("background").GetString();
+                                List<string> skills = humanData.GetProperty("skills").EnumerateArray().Select(item => item.GetString()).ToList();
+                                List<string> knowledgeDomains = humanData.GetProperty("knowledgeDomains").EnumerateArray().Select(item => item.GetString()).ToList();
+                                List<string> proclivities = humanData.GetProperty("proclivities").EnumerateArray().Select(item => item.GetString()).ToList();
+
+                                var persona = new Persona
+                                {
+                                    Background = background,
+                                    Skills = skills,
+                                    KnowledgeDomains = knowledgeDomains,
+                                    Proclivities = proclivities
+                                };
+                                
+                                Human human = new(this._settings, name, persona);
+                                team.AddMember(human);
                             }
-                        }
-                        
-                        var persona = new Persona
-                        {
-                            Background = background,
-                            Skills = skills,
-                            KnowledgeDomains = knowledgeDomains,
-                            Proclivities = proclivities
-                        };                        
-                        Human human = new(this._settings, name, persona);
-                        team.AddMember(human);
-                    }
+                        }    
+                    }                
                 }
                 else
                 {
