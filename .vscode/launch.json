@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/Debug/net7.0/TeamGPT.dll",
             "preLaunchTask": "build",
-            "args": ["Solve world hunger."],
+            "args": ["Develop an application which calculates prime numbers."],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
             "console": "internalConsole",

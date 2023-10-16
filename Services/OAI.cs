@@ -210,21 +210,7 @@ namespace TeamGPT.Services
                         {
                             foreach (var humanData in humansElement.EnumerateArray())
                             {
-                                string name = humanData.GetProperty("name").GetString();
-                                string background = humanData.GetProperty("background").GetString();
-                                List<string> skills = humanData.GetProperty("skills").EnumerateArray().Select(item => item.GetString()).ToList();
-                                List<string> knowledgeDomains = humanData.GetProperty("knowledgeDomains").EnumerateArray().Select(item => item.GetString()).ToList();
-                                List<string> proclivities = humanData.GetProperty("proclivities").EnumerateArray().Select(item => item.GetString()).ToList();
-
-                                var persona = new Persona
-                                {
-                                    Background = background,
-                                    Skills = skills,
-                                    KnowledgeDomains = knowledgeDomains,
-                                    Proclivities = proclivities
-                                };
-                                
-                                Human human = new(this._settings, name, persona);
+                                Human human = ToHuman(humanData);
                                 team.AddMember(human);
                             }
                         }    
@@ -249,6 +235,26 @@ namespace TeamGPT.Services
             return team;
         }
 
+        private Human ToHuman(JsonElement humanData)
+        {
+            string name = humanData.GetProperty("name").GetString();
+            string background = humanData.GetProperty("background").GetString();
+            List<string> skills = humanData.GetProperty("skills").EnumerateArray().Select(item => item.GetString()).ToList();
+            List<string> knowledgeDomains = humanData.GetProperty("knowledgeDomains").EnumerateArray().Select(item => item.GetString()).ToList();
+            List<string> proclivities = humanData.GetProperty("proclivities").EnumerateArray().Select(item => item.GetString()).ToList();
+
+            var persona = new Persona
+            {
+                Background = background,
+                Skills = skills,
+                KnowledgeDomains = knowledgeDomains,
+                Proclivities = proclivities
+            };
+            
+            Human human = new(this._settings, name, persona);
+            return human;
+        }
+        
         private List<string> convertToList(object value)
         {
             List<string> strings = new();

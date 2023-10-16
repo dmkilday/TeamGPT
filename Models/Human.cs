@@ -133,7 +133,7 @@ namespace TeamGPT.Models
             objective.Activate();
             
             // Query my brain
-            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Starting to do objective '{objective.Goal}'...");
+            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Starting work on objective '{objective.Goal}'...");
             string response = this.Brain.Think(objective.Goal).Result;
 
             // Set outcome of objective
