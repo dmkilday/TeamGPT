@@ -89,7 +89,7 @@ namespace TeamGPT.Services
             var completionResult = this.bedalgoAiService.ChatCompletion.CreateCompletion(new OpenAI.ObjectModels.RequestModels.ChatCompletionCreateRequest
             {
                 Messages = messages,
-                Model = OpenAI.ObjectModels.Models.ChatGpt3_5Turbo
+                Model = OpenAI.ObjectModels.Models.Gpt_4
             }).Result;
             if (completionResult.Successful)
             {
@@ -141,7 +141,6 @@ namespace TeamGPT.Services
             Team team = new(this._settings);
 
             IOpenAIService sdk = bedalgoAiService;
-            Console.WriteLine("Chat Function Call Testing is starting:", ConsoleColor.Cyan);
 
             var fn1 = new FunctionDefinitionBuilder("get_team_member", "Identify a human for a given objective")
                 .AddParameter("name", PropertyDefinition.DefineString("The first and last name of the team member"))
@@ -176,7 +175,6 @@ namespace TeamGPT.Services
 
             try
             {
-                Console.WriteLine("Chat Function Call Test:", ConsoleColor.DarkCyan);
                 var completionResult = await sdk.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
                 {
                     Messages = new List<OpenAI.ObjectModels.RequestModels.ChatMessage>
