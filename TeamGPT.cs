@@ -21,9 +21,8 @@ namespace TeamGPT
             var appSettings = Configurator.ConfigureApplication();
             Console.WriteLine($"App Name: {appSettings.ApplicationName}");
             Console.WriteLine($"Version: {appSettings.Version}");
-            Console.WriteLine($"Default Directive: {appSettings.DefaultDirective}");
 
-            // Get the main directive from the user
+            // Handle command line input
             var default_directive = appSettings.DefaultDirective;
             string? main_directive = null;
             try
@@ -43,9 +42,6 @@ namespace TeamGPT
                 Environment.Exit(1); // Exit the application with an error code of 1
             }
                 
-            // Build the team
-            Console.WriteLine("Building optimal team for the directive provided...");
-
             // Create personas
             var engineer = new Persona
             {
@@ -72,16 +68,11 @@ namespace TeamGPT
             };            
 
             // Create the team
+            Console.WriteLine("Building optimal team for the directive provided...");
             Human me = new(appSettings, "Damian", solutionArchitect);
             TeamBuilder tb = new(appSettings, me);
             Objective main_objective = new Objective(appSettings, null, conceiver: me, goal: main_directive);
             Team team = await tb.Build(main_objective); // Create a new team based on the main_objective
-
-            //Team team = new Team(appSettings);
-            // var alice = new Human(appSettings, "Alice", engineer);
-            // alice.JoinTeam(team);
-            // var bob = new Human(appSettings, "Bob", artist);
-            // bob.JoinTeam(team);
 
             // Display team
             Console.WriteLine();
@@ -91,21 +82,11 @@ namespace TeamGPT
                 Console.WriteLine(member);
             }
 
-            // Create objective & assign to Bob
+            // Create objective & default assignment to 1st team member in the list
             Objective objective = new Objective(appSettings, null, conceiver: me, goal: main_directive);
             Human assignee = team.Members[0];
             me.Assign(objective, assignee);
             
-            // Output the task outcome
-            if (assignee.Objective.IsComplete)
-            {
-                Console.WriteLine($"{assignee.Name} has finished the Objective '{objective.Goal}'.");
-                foreach (Activity activity in assignee.Objective.Activities)
-                {
-                    Console.WriteLine($"Activity Outcome: {activity.Outcome}");
-                }
-            }
-
             // Cleanup the log
             Log.CloseAndFlush();
         }

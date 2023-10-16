@@ -144,7 +144,7 @@ namespace TeamGPT.Services
             Console.WriteLine("Chat Function Call Testing is starting:", ConsoleColor.Cyan);
 
             var fn1 = new FunctionDefinitionBuilder("get_team_member", "Identify a human for a given objective")
-                .AddParameter("name", PropertyDefinition.DefineString("The name of the team member"))
+                .AddParameter("name", PropertyDefinition.DefineString("The first and last name of the team member"))
                 .AddParameter("background", PropertyDefinition.DefineString("The background of the team member (e.g., 'Engineer', 'Artist', 'Doctor')"))
                 .AddParameter("skills", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The skills of the team member (e.g., 'Programming', 'Drawing', 'Surgery')")))
                 .AddParameter("knowledgedomains", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The knowledge domains of the team member (e.g., 'Machine Learning', 'Renaissance Art', 'Cardiology')")))
@@ -156,7 +156,7 @@ namespace TeamGPT.Services
             var humanDefinition = PropertyDefinition.DefineObject(
                 new Dictionary<string, PropertyDefinition>
                 {
-                    { "name", PropertyDefinition.DefineString("The name of the team member") },
+                    { "name", PropertyDefinition.DefineString("The first and last name of the team member") },
                     { "background", PropertyDefinition.DefineString("The background of the team member (e.g., 'Engineer', 'Artist', 'Doctor')") },
                     { "skills", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The skills of the team member (e.g., 'Programming', 'Drawing', 'Surgery')")) },
                     { "knowledgeDomains", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The knowledge domains of the team member (e.g., 'Machine Learning', 'Renaissance Art', 'Cardiology')")) },
@@ -202,12 +202,10 @@ namespace TeamGPT.Services
                 if (completionResult.Successful)
                 {
                     var choice = completionResult.Choices.First();
-                    Console.WriteLine($"Message:        {choice.Message.Content}");
-
                     var fn = choice.Message.FunctionCall;
                     if (fn != null && fn.Name == "get_team_members")
                     {
-                        Console.WriteLine($"Function call:  {fn.Name}");
+                        Console.WriteLine($"Function call: {fn.Name}");
                         var humansListData = fn.ParseArguments()["humans"];
 
                         if (humansListData is JsonElement humansElement && humansElement.ValueKind == JsonValueKind.Array)

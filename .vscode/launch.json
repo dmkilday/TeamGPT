@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/Debug/net7.0/TeamGPT.dll",
             "preLaunchTask": "build",
-            "args": ["Write a short paragraph about types of indian food."],
+            "args": ["Solve world hunger."],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,
             "console": "internalConsole",

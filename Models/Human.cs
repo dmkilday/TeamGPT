@@ -14,13 +14,14 @@ namespace TeamGPT.Models
         public string Name { get; private set; } 
         private Brain Brain;
         public Team Team { get; private set; }
-        public Objective? Objective { get; private set; }
-        public Tasks.Activity? CurrentActivity { get; private set; }
+        public List<Objective> Objectives { get; private set; }
+        public Tasks.Objective? CurrentObjective { get; private set; }
 
         public Human(ApplicationSettings settings, string name, Persona persona)
         {
             this._settings = settings;
             this._logger = settings.LoggerInstance;
+
             // Store the log file path named after the human & configure their logger
             _logFilePath = $"logs/{name}.log";
             _logger.ConfigureLogFile(_logFilePath);
@@ -28,6 +29,7 @@ namespace TeamGPT.Models
             // Set remaining properties
             this.Brain = new(_settings, this, persona);
             this.Name = name;
+            this.Objectives = new();
             
             _logger.Log(Logger.CustomLogLevel.Information, Name, "I'm alive and reporting for duty!");
         }
@@ -40,6 +42,7 @@ namespace TeamGPT.Models
         public void Assign(Objective objective, Human assignee)
         {
             assignee.ReceiveAssignment(objective);
+            assignee.Work(); // Manually do this for now, but will use a timer in the future.
         }
 
         public Human GetAssignee(Objective objective)
@@ -54,41 +57,38 @@ namespace TeamGPT.Models
 
         public void ReceiveAssignment(Objective objective)
         {
-            this.Objective = objective;
-            this.Objective.IsDecomposable = this.DetermineDecomposability(objective);
-            if (this.Objective.IsDecomposable != null)
+            // Add to my to-do list of objectives
+            this.Objectives.Add(objective);
+            objective.Assign(this); // Also, assign the objective to me (bi-directional reference)
+
+            // Set the current objective I'm working on
+            this.CurrentObjective = objective;
+
+            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"I have received the objective '{objective.Goal}'");
+
+            this.CurrentObjective.IsDecomposable = this.DetermineDecomposability(objective);
+            if (this.CurrentObjective.IsDecomposable != null)
             {
-                // If my objective is atomic, then identify activities and start working on them
-                if (this.Objective.IsDecomposable == false)
+                // If my objective is decomposable, then identify sub-objectives and assign them
+                if (this.CurrentObjective.IsDecomposable == true)
                 {
-                    // Determine activities and add to objective
-                    this.IdentifyActivities(objective);
+                    this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"I am decomposing the objective '{objective.Goal}'");
 
-                    // Log the activity
-                    string activities = "";
-                    foreach (Tasks.Activity activity in Objective.Activities)
-                    {
-                        activities += $"\n -- {activity.Description}";
-                    }
-                    _logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Determined objective is atomic - created the following activities...{activities}");
-
-                    // Now that I have my activities I can start working
-                    this.Work();
-                }
-                // If objective is decomposable, get the sub objectives and assign them
-                else
-                {
                     // Generate sub objectives
                     List<Objective> sub_objectives = this.Decompose(objective);
 
                     // Assign the sub objectives
                     foreach (Objective sub_objective in sub_objectives)
                     {
+                        this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"For objective '{objective.Goal}', I created sub-objective '{sub_objective.Goal}'");
+
                         // Determine who the assignee should be
                         Human assignee = GetAssignee(sub_objective);
 
                         // Assign the objective
                         this.Assign(sub_objective, assignee);
+
+                        this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Assigned sub-objective '{sub_objective.Goal}' to {assignee.Name}");
                     }
                 }
             }
@@ -112,45 +112,37 @@ namespace TeamGPT.Models
             return sub_objectives;
         }
 
-        public void IdentifyActivities(Objective objective)
-        {
-            // Stub out the activity for now
-            // TODO: Call ChatGPT to get list.
-            objective.AddActivity(new Tasks.Activity(this._settings, objective, this, objective.Goal));
-        }
-
-        // Initiate process to do the activities for my current objective
+        // Initiate process to work on the current objective 
         private void Work()
         {
-            if (this.Objective != null)
+            if (this.CurrentObjective != null)
             {
-                if(!this.Objective.IsComplete)
+                if(!this.CurrentObjective.IsAchieved)
                 {
-                    foreach(Tasks.Activity activity in this.Objective.Activities)
-                    {
-                        // Only work on incomplete activities
-                        if (!activity.IsComplete)
-                        {
-                            this.Do(activity);
-                        }
-                    }
+                    this.Do(CurrentObjective);
                 }
             }
         }
 
-        private void Do(Tasks.Activity activity)
+        private void Do(Tasks.Objective objective)
         {
             // Set the current activity I'm working on
-            this.CurrentActivity = activity;
+            this.CurrentObjective = objective;
 
+            // Updatedthe objective status to in-progress
+            objective.Activate();
+            
             // Query my brain
-            string response = this.Brain.Think(activity.Description).Result;
+            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Starting to do objective '{objective.Goal}'...");
+            string response = this.Brain.Think(objective.Goal).Result;
 
-            // Set outcome of activity
-            activity.Complete(response);
+            // Set outcome of objective
+            objective.Complete(response);
+            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Completed objective '{objective.Goal}'.");
+            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Objective outcome was '{objective.Outcome}'.");
 
             // Clear current activity
-            this.CurrentActivity = null;            
+            this.CurrentObjective = null;
         }
 
         public void JoinTeam(Team team)

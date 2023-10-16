@@ -85,7 +85,6 @@ namespace TeamGPT.Utilities
             services.AddSingleton<Services.OAI>();
 
             // Register Tasks classes
-            services.AddSingleton<Activity>();
             services.AddSingleton<Objective>();
 
             // Register ErrorHandler
