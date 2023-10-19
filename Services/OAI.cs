@@ -142,7 +142,7 @@ namespace TeamGPT.Services
 
             IOpenAIService sdk = bedalgoAiService;
 
-            var fn1 = new FunctionDefinitionBuilder("get_team_member", "Identify a human for a given objective")
+            var fn1 = new FunctionDefinitionBuilder("get_team_member", "Create a single human for a given objective")
                 .AddParameter("name", PropertyDefinition.DefineString("The first and last name of the team member"))
                 .AddParameter("background", PropertyDefinition.DefineString("The background of the team member (e.g., 'Engineer', 'Artist', 'Doctor')"))
                 .AddParameter("skills", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The skills of the team member (e.g., 'Programming', 'Drawing', 'Surgery')")))
@@ -189,14 +189,6 @@ namespace TeamGPT.Services
                     Model = OpenAI.ObjectModels.Models.Gpt_4
                 });
 
-                /*  expected output along the lines of:
-                
-                    Message:
-                    Function call:  get_n_day_weather_forecast
-                    location: Chicago, USA
-                    format: celsius
-                    num_days: 5
-                */
                 if (completionResult.Successful)
                 {
                     var choice = completionResult.Choices.First();
@@ -233,6 +225,68 @@ namespace TeamGPT.Services
             }
 
             return team;
+        }
+
+        public async Task<Human> DefineTeamMemberFunction(string directive)
+        {
+            Human human = null;
+
+            IOpenAIService sdk = bedalgoAiService;
+
+            var fn1 = new FunctionDefinitionBuilder("get_team_member", "Create a single human for a given objective")
+                .AddParameter("name", PropertyDefinition.DefineString("The first and last name of the team member"))
+                .AddParameter("background", PropertyDefinition.DefineString("The background of the team member (e.g., 'Engineer', 'Artist', 'Doctor')"))
+                .AddParameter("skills", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The skills of the team member (e.g., 'Programming', 'Drawing', 'Surgery')")))
+                .AddParameter("knowledgedomains", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The knowledge domains of the team member (e.g., 'Machine Learning', 'Renaissance Art', 'Cardiology')")))
+                .AddParameter("proclivities", PropertyDefinition.DefineArray(PropertyDefinition.DefineString("The proclivities of the team member (e.g., 'Analytical', 'Creative', 'Patient')")))
+                .Validate()
+                .Build();
+
+            try
+            {
+                var completionResult = await sdk.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+                {
+                    Messages = new List<OpenAI.ObjectModels.RequestModels.ChatMessage>
+                    {
+                        OpenAI.ObjectModels.RequestModels.ChatMessage.FromSystem("Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."),
+                        OpenAI.ObjectModels.RequestModels.ChatMessage.FromUser($"Find the optimal team member to complete the objective: '{directive}'")
+                    },
+                    Functions = new List<FunctionDefinition> {fn1},
+                    // optionally, to force a specific function:
+                    FunctionCall = new Dictionary<string, string> { { "name", "get_team_member" } },
+                    MaxTokens = 500,
+                    Model = OpenAI.ObjectModels.Models.Gpt_4
+                });
+
+                if (completionResult.Successful)
+                {
+                    var choice = completionResult.Choices.First();
+                    var fn = choice.Message.FunctionCall;
+                    if (fn != null && fn.Name == "get_team_member")
+                    {
+                        Console.WriteLine($"Function call: {fn.Name}");
+                        var humanData = fn.ParseArguments()["human"];
+                        var json = (JsonElement)humanData;
+                        human = ToHuman(json);
+                    }                
+                }
+                else
+                {
+                    if (completionResult.Error == null)
+                    {
+                        throw new Exception("Unknown Error");
+                    }
+
+                    Console.WriteLine($"{completionResult.Error.Code}: {completionResult.Error.Message}");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
+            return human;
         }
 
         private Human ToHuman(JsonElement humanData)

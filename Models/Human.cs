@@ -35,15 +35,13 @@ namespace TeamGPT.Models
             this.Goals.Add(goal);
             goal.Assign(this);
 
-            this.CurrentGoal = goal;
-
             this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"I have received the objective '{goal.Description}'");
 
             // Determine if the task can be decomposed into smaller tasks
             goal.IsDecomposable = this.DetermineDecomposability(goal);
-            if (this.CurrentGoal.IsDecomposable != null)
+            if (goal.IsDecomposable != null)
             {
-                if (this.CurrentGoal.IsDecomposable == true)
+                if (goal.IsDecomposable == true)
                 {
                     this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"I am decomposing the objective '{goal.Description}'");
 
@@ -82,6 +80,12 @@ namespace TeamGPT.Models
             return team;
         }
 
+        public async Task<Human> DefineTeamMember(Goal goal)
+        {
+            Human human = await this.Brain.DefineTeamMember(goal);
+            return human;
+        }
+
         // Join a team
         public void JoinTeam(Team team)
         {
@@ -94,6 +98,19 @@ namespace TeamGPT.Models
         {
             this.Team.RemoveMember(this);
             this.Team = null;
+        }
+
+        public override string ToString()
+        {
+            string background = this.Brain.Persona.Background == null ? "" : string.Join(", ", this.Brain.Persona.Background);
+            string proclivities = this.Brain.Persona.Proclivities == null ? "" : string.Join(", ", this.Brain.Persona.Proclivities);
+            string knowlegdeDomains = this.Brain.Persona.KnowledgeDomains == null ? "" : string.Join(", ", this.Brain.Persona.KnowledgeDomains);
+            string skills = this.Brain.Persona.Skills == null ? "" : string.Join(", ", this.Brain.Persona.Skills);
+            return $"{this.Name}:\n" +
+                    $"\tBackground: {background}\n" +
+                    $"\tProclivities: {proclivities}\n" +
+                    $"\tKnowledge Domains: {knowlegdeDomains}\n" +
+                    $"\tSkills: {skills}";
         }
     }
 }

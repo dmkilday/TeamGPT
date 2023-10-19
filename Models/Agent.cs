@@ -17,7 +17,9 @@ namespace TeamGPT.Models
         protected readonly string _logFilePath;
         protected Cognition Cognition { get; private set; }
         public Activities.Goal? CurrentGoal { get; protected set; }
-
+        public abstract void ReceiveAssignment(Goal goal);
+        public abstract Task<string> Think(string input);
+        public abstract override string ToString();
 
         public Agent(ApplicationSettings settings, string name)
         {
@@ -38,11 +40,7 @@ namespace TeamGPT.Models
             return 1;
         }
 
-        public abstract void ReceiveAssignment(Goal goal);
-        public abstract Task<string> Think(string input);
-        // ... Additional methods and properties common to all agents ...
-
-                // Assign a task to another human
+        // Assign a task to another human
         public void Assign(Goal goal, Human assignee)
         {
             assignee.ReceiveAssignment(goal);
@@ -84,9 +82,30 @@ namespace TeamGPT.Models
             return sub_goals;
         }
 
+        private Goal Pick()
+        {
+            Goal nextGoal = null;
+
+            // Get the highest priority incomplete goal from my to-do list.
+            var incompleteGoals = this.Goals
+                .Where(g => g.Status != Status.Completed)
+                .OrderBy(g => g.Priority)
+                .ToList();
+            
+            if (incompleteGoals != null)
+                nextGoal = incompleteGoals[0];
+
+            return nextGoal;
+        }
+
         // Start working on the objective
         private void Work()
         {
+            // Grab the next goal from my to-do list
+            // and distinguish it as my CurrentGoal
+            this.CurrentGoal = Pick();
+
+            // If the goal is legit and incomplete, do it!
             if (this.CurrentGoal != null)
             {
                 if (!this.CurrentGoal.IsMet)
@@ -99,8 +118,6 @@ namespace TeamGPT.Models
         // Execute the objective
         private void Do(Activities.Goal goal)
         {
-            this.CurrentGoal = goal;
-
             goal.Activate();
             
             this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Starting work on objective '{goal.Description}'...");

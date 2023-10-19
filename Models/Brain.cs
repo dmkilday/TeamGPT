@@ -37,6 +37,12 @@ namespace TeamGPT.Models
             return team;
         }
 
+        public async Task<Human> DefineTeamMember(Goal goal)
+        {
+            Human human = await oai.DefineTeamMemberFunction(goal.Description);
+            return human;
+        }
+
         public Choice Choose(Goal goal)
         {
             Choice choice = new(this._settings, goal);

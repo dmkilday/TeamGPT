@@ -70,21 +70,23 @@ namespace TeamGPT
             // Create the team
             Console.WriteLine("Building optimal team for the directive provided...");
             Human me = new(appSettings, "Damian", solutionArchitect);
-            TeamBuilder tb = new(appSettings, me);
-            Goal main_goal = new Goal(appSettings, null, conceiver: me, description: main_directive, 0.5);
-            Team team = await tb.Build(main_goal); // Create a new team based on the main_objective
+            // TeamBuilder tb = new(appSettings, me);
+            // Goal main_goal = new Goal(appSettings, null, conceiver: me, description: main_directive, 0.5);
+            // Team team = await tb.Build(main_goal); // Create a new team based on the main_objective
 
             // Display team
             Console.WriteLine();
             Console.WriteLine("Team Composition:");
-            foreach (Human member in team.Members)
-            {
-                Console.WriteLine(member);
-            }
+            // foreach (Human member in team.Members)
+            // {
+            //     Console.WriteLine(member);
+            // }
 
             // Create objective & default assignment to 1st team member in the list
             Goal goal = new(appSettings, null, conceiver: me, description: main_directive, 0.5);
-            Human assignee = team.Members[0];
+            Human assignee = await me.DefineTeamMember(goal);
+            Console.WriteLine(assignee);
+            //Human assignee = team.Members[0];
             me.Assign(goal, assignee);
             
             // Cleanup the log
