@@ -1,31 +1,26 @@
-using System.ComponentModel;
-using TeamGPT.Services;
-using TeamGPT.Tasks;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using TeamGPT.Activities;
 using TeamGPT.Utilities;
 
 namespace TeamGPT.Models
 {
-    public class Brain
+    public class Brain : Cognition
     {
-        private readonly ApplicationSettings _settings;
-        public Human Owner { get; private set; }
         public Persona Persona { get; private set; }
-        private OAI oai;
 
-        public Brain(ApplicationSettings settings, Human owner, Persona persona)
+        public Brain(ApplicationSettings settings, Human owner, Persona persona) 
+            : base(settings, owner)  // Calling the base constructor
         {
-            this._settings = settings;
-            this.Owner = owner;
             this.Persona = persona;
-            oai = new(_settings, this);
         }
 
-        public async Task<string> Think(string input)
+        public override async Task<string> Think(string input)
         {
             // Create the thought
             Thought inputThought = new Thought(true, input);
 
-            // Call OpenAI to get thought response
+            // Call OpenAI to get thought response using the oai member from Cognition
             Thought outputThought = await oai.Prompt(inputThought);
             
             return outputThought.Content;
@@ -36,17 +31,18 @@ namespace TeamGPT.Models
             return oai.GetThoughts();
         }
 
-        public async Task<Team> DefineTeam(Objective objective)
+        public async Task<Team> DefineTeam(Goal goal)
         {
-            Team team = await oai.DefineTeamFunction(objective.Goal);
+            Team team = await oai.DefineTeamFunction(goal.Description);
             return team;
         }
 
-        public Choice Choose(Objective objective)
+        public Choice Choose(Goal goal)
         {
-            Choice choice = new(this._settings, objective);
-
+            Choice choice = new(this._settings, goal);
             return choice;
         }
+
+        // ... Other methods specific to the Brain ...
     }
 }

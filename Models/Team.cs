@@ -17,6 +17,11 @@ namespace TeamGPT.Models
         {
             Members.Add(human);
         }
+
+        public void RemoveMember(Human human)
+        {
+            Members.Remove(human);
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-using TeamGPT.Tasks;
+using TeamGPT.Activities;
 using TeamGPT.Utilities;
 
 namespace TeamGPT.Models
@@ -13,7 +13,7 @@ namespace TeamGPT.Models
             Do
         }
 
-        public Choice(ApplicationSettings settings, Objective objective)
+        public Choice(ApplicationSettings settings, Goal goal)
         {
             this._settings = settings;
             

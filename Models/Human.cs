@@ -1,173 +1,99 @@
 using Serilog;
-
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using TeamGPT.Activities;
 using TeamGPT.Utilities;
-using TeamGPT.Tasks;
-using System.Dynamic;
 
 namespace TeamGPT.Models
 {
-    public class Human
+    public class Human : Agent
     {
-        private readonly ApplicationSettings _settings;
-        private readonly Logger _logger;
-        private readonly string _logFilePath; // Store the log file path
-        public string Name { get; private set; } 
-        private Brain Brain;
+        private Brain Brain;  // This is the human's cognitive interface, allowing for complex thought.
         public Team Team { get; private set; }
-        public List<Objective> Objectives { get; private set; }
-        public Tasks.Objective? CurrentObjective { get; private set; }
 
         public Human(ApplicationSettings settings, string name, Persona persona)
+            : base(settings, name)  // Call the base constructor of Agent class
         {
-            this._settings = settings;
-            this._logger = settings.LoggerInstance;
-
-            // Store the log file path named after the human & configure their logger
-            _logFilePath = $"logs/{name}.log";
-            _logger.ConfigureLogFile(_logFilePath);
-
-            // Set remaining properties
-            this.Brain = new(_settings, this, persona);
-            this.Name = name;
-            this.Objectives = new();
+            // Initialize the Brain, which will be the human's thinking mechanism.
+            this.Brain = new Brain(_settings, this, persona);
+            this.Goals = new List<Goal>();
             
             _logger.Log(Logger.CustomLogLevel.Information, Name, "I'm alive and reporting for duty!");
         }
 
+        // Retrieve the human's persona
         public Persona? GetPersona()
         {
             return this.Brain.Persona;
         }
 
-        public void Assign(Objective objective, Human assignee)
+       // Receive a task and process it
+        public override void ReceiveAssignment(Goal goal)
         {
-            assignee.ReceiveAssignment(objective);
-            assignee.Work(); // Manually do this for now, but will use a timer in the future.
-        }
+            this.Goals.Add(goal);
+            goal.Assign(this);
 
-        public Human GetAssignee(Objective objective)
-        {
-            // TODO: Get assignee from chat GPT.
-            Random random = new Random();
-            int maxMemberIndex = this.Team.Members.Count - 1;
-            int randomIndex = random.Next(0, maxMemberIndex);  // Randomly selects a member index
-            Human assignee = Team.Members[randomIndex];
-            return assignee;
-        }
+            this.CurrentGoal = goal;
 
-        public void ReceiveAssignment(Objective objective)
-        {
-            // Add to my to-do list of objectives
-            this.Objectives.Add(objective);
-            objective.Assign(this); // Also, assign the objective to me (bi-directional reference)
+            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"I have received the objective '{goal.Description}'");
 
-            // Set the current objective I'm working on
-            this.CurrentObjective = objective;
-
-            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"I have received the objective '{objective.Goal}'");
-
-            this.CurrentObjective.IsDecomposable = this.DetermineDecomposability(objective);
-            if (this.CurrentObjective.IsDecomposable != null)
+            // Determine if the task can be decomposed into smaller tasks
+            goal.IsDecomposable = this.DetermineDecomposability(goal);
+            if (this.CurrentGoal.IsDecomposable != null)
             {
-                // If my objective is decomposable, then identify sub-objectives and assign them
-                if (this.CurrentObjective.IsDecomposable == true)
+                if (this.CurrentGoal.IsDecomposable == true)
                 {
-                    this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"I am decomposing the objective '{objective.Goal}'");
+                    this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"I am decomposing the objective '{goal.Description}'");
 
-                    // Generate sub objectives
-                    List<Objective> sub_objectives = this.Decompose(objective);
+                    List<Goal> sub_goals = this.Decompose(goal);
 
-                    // Assign the sub objectives
-                    foreach (Objective sub_objective in sub_objectives)
+                    foreach (Goal sub_goal in sub_goals)
                     {
-                        this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"For objective '{objective.Goal}', I created sub-objective '{sub_objective.Goal}'");
-
-                        // Determine who the assignee should be
-                        Human assignee = GetAssignee(sub_objective);
-
-                        // Assign the objective
-                        this.Assign(sub_objective, assignee);
-
-                        this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Assigned sub-objective '{sub_objective.Goal}' to {assignee.Name}");
+                        this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"For objective '{goal.Description}', I created sub-objective '{sub_goal.Description}'");
+                        Human assignee = GetAssignee(sub_goal);
+                        this.Assign(sub_goal, assignee);
+                        this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Assigned sub-objective '{sub_goal.Description}' to {assignee.Name}");
                     }
                 }
             }
         }
 
-        public bool? DetermineDecomposability(Objective objective)
+        // Think about a given input using the human's Brain
+        public override Task<string> Think(string input)
         {
-            return false;
+            return this.Brain.Think(input);
         }
 
-        public List<Objective> Decompose(Objective objective)
+        // Randomly get a human from the team to assign a task to
+        public Human GetAssignee(Goal goal)
         {
-            // Create empty list of objectives
-            List<Objective> sub_objectives = new();
-            
-            // Stub out the list for now
-            // TODO: Call ChatGPT to get list.
-            sub_objectives.Add(new Objective(this._settings, objective, this, "Sub Objective #1"));
-            sub_objectives.Add(new Objective(this._settings, objective, this, "Sub Objective #2"));
-            sub_objectives.Add(new Objective(this._settings, objective, this, "Sub Objective #3"));
-            return sub_objectives;
+            Random random = new Random();
+            int maxMemberIndex = this.Team.Members.Count - 1;
+            int randomIndex = random.Next(0, maxMemberIndex);
+            Human assignee = Team.Members[randomIndex];
+            return assignee;
         }
 
-        // Initiate process to work on the current objective 
-        private void Work()
+        public async Task<Team> DefineTeam(Goal goal)
         {
-            if (this.CurrentObjective != null)
-            {
-                if(!this.CurrentObjective.IsAchieved)
-                {
-                    this.Do(CurrentObjective);
-                }
-            }
+            Team team = await this.Brain.DefineTeam(goal);
+            return team;
         }
 
-        private void Do(Tasks.Objective objective)
-        {
-            // Set the current activity I'm working on
-            this.CurrentObjective = objective;
-
-            // Updatedthe objective status to in-progress
-            objective.Activate();
-            
-            // Query my brain
-            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Starting work on objective '{objective.Goal}'...");
-            string response = this.Brain.Think(objective.Goal).Result;
-
-            // Set outcome of objective
-            objective.Complete(response);
-            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Completed objective '{objective.Goal}'.");
-            this._logger.Log(Logger.CustomLogLevel.Information, this.Name, $"Objective outcome was '{objective.Outcome}'.");
-
-            // Clear current activity
-            this.CurrentObjective = null;
-        }
-
+        // Join a team
         public void JoinTeam(Team team)
         {
             this.Team = team;
             this.Team.AddMember(this);
         }
 
-        public async Task<Team> DefineTeam(Objective objective)
+        // Leave a team
+        public void LeaveTeam(Team team)
         {
-            Team team = await this.Brain.DefineTeam(objective);
-            return team;
-        }
-
-        public override string ToString()
-        {
-            string background = this.Brain.Persona.Background == null ? "" : string.Join(", ", this.Brain.Persona.Background);
-            string proclivities = this.Brain.Persona.Proclivities == null ? "" : string.Join(", ", this.Brain.Persona.Proclivities);
-            string knowlegdeDomains = this.Brain.Persona.KnowledgeDomains == null ? "" : string.Join(", ", this.Brain.Persona.KnowledgeDomains);
-            string skills = this.Brain.Persona.Skills == null ? "" : string.Join(", ", this.Brain.Persona.Skills);
-            return $"{this.Name}:\n" +
-                    $"\tBackground: {background}\n" +
-                    $"\tProclivities: {proclivities}\n" +
-                    $"\tKnowledge Domains: {knowlegdeDomains}\n" +
-                    $"\tSkills: {skills}";
+            this.Team.RemoveMember(this);
+            this.Team = null;
         }
     }
 }

@@ -8,7 +8,7 @@ using Serilog;
 
 using TeamGPT.Models;
 using TeamGPT.Utilities;
-using TeamGPT.Tasks;
+using TeamGPT.Activities;
 using TeamGPT.Services;
 
 namespace TeamGPT
@@ -71,8 +71,8 @@ namespace TeamGPT
             Console.WriteLine("Building optimal team for the directive provided...");
             Human me = new(appSettings, "Damian", solutionArchitect);
             TeamBuilder tb = new(appSettings, me);
-            Objective main_objective = new Objective(appSettings, null, conceiver: me, goal: main_directive);
-            Team team = await tb.Build(main_objective); // Create a new team based on the main_objective
+            Goal main_goal = new Goal(appSettings, null, conceiver: me, description: main_directive, 0.5);
+            Team team = await tb.Build(main_goal); // Create a new team based on the main_objective
 
             // Display team
             Console.WriteLine();
@@ -83,9 +83,9 @@ namespace TeamGPT
             }
 
             // Create objective & default assignment to 1st team member in the list
-            Objective objective = new Objective(appSettings, null, conceiver: me, goal: main_directive);
+            Goal goal = new(appSettings, null, conceiver: me, description: main_directive, 0.5);
             Human assignee = team.Members[0];
-            me.Assign(objective, assignee);
+            me.Assign(goal, assignee);
             
             // Cleanup the log
             Log.CloseAndFlush();

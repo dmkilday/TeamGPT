@@ -17,16 +17,16 @@ namespace TeamGPT.Services
     {
         private readonly ApplicationSettings _settings;
         private string ApiKey;
-        private Brain parentBrain;
+        private Cognition parentCognition;
         public List<(string role, string content)> Dialog { get; private set; }
         private OpenAIAPI openAiService;
         private OpenAI.Managers.OpenAIService bedalgoAiService;
         private Conversation conversation;
 
-        public OAI(ApplicationSettings settings, Brain brain)
+        public OAI(ApplicationSettings settings, Cognition cognition)
         {
             this._settings = settings;
-            this.parentBrain = brain;
+            this.parentCognition = cognition;
             this.ApiKey = settings.ApiKey;
             this.openAiService = new OpenAIAPI(ApiKey);
             this.conversation = openAiService.Chat.CreateConversation();
@@ -44,7 +44,7 @@ namespace TeamGPT.Services
             // Set the persona in the dialog if this is the first time being prompted
             if (this.conversation.Messages.Count == 0)
             {
-                this.conversation.AppendSystemMessage($"You are my brain, and I am going to have an internal conversation with you which represents my train of thought. Here is my persona which you shall emulate. Persona: {parentBrain.Owner}");
+                this.conversation.AppendSystemMessage($"You are my brain, and I am going to have an internal conversation with you which represents my train of thought. Here is my persona which you shall emulate. Persona: {parentCognition.Owner}");
             }
 
             // Get the response from OpenAI API

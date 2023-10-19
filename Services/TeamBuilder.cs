@@ -1,5 +1,5 @@
 using TeamGPT.Models;
-using TeamGPT.Tasks;
+using TeamGPT.Activities;
 using TeamGPT.Utilities;
 
 namespace TeamGPT.Services
@@ -17,9 +17,9 @@ namespace TeamGPT.Services
             this.Humans = new List<Human>();
         }
 
-        public async Task<Team> Build(Objective objective)
+        public async Task<Team> Build(Goal goal)
         {
-            Team team = await this._manager.DefineTeam(objective);
+            Team team = await this._manager.DefineTeam(goal);
             return team;
         }
     }
