@@ -15,7 +15,7 @@ namespace TeamGPT.Models
         protected readonly ApplicationSettings _settings;
         protected readonly Logger _logger;
         protected readonly string _logFilePath;
-        protected Cognition Cognition { get; private set; }
+        protected Cognition Cognition { get; set; }
         public Activities.Goal? CurrentGoal { get; protected set; }
         public abstract void ReceiveAssignment(Goal goal);
         public abstract Task<string> Think(string input);
@@ -31,7 +31,6 @@ namespace TeamGPT.Models
             Name = name;
             _logFilePath = $"logs/{Name}--{ID}.log";
             _logger.ConfigureLogFile(_logFilePath);       
-
         }
 
         // Get ID from AgentManager

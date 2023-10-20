@@ -265,9 +265,17 @@ namespace TeamGPT.Services
                     if (fn != null && fn.Name == "get_team_member")
                     {
                         Console.WriteLine($"Function call: {fn.Name}");
-                        var humanData = fn.ParseArguments()["human"];
-                        var json = (JsonElement)humanData;
-                        human = ToHuman(json);
+                        var argumentsDict = fn.ParseArguments();
+                        
+                        // Convert the dictionary back to a JSON string
+                        string jsonString = JsonSerializer.Serialize(argumentsDict);
+                        
+                        // Parse the JSON string to get a JsonElement
+                        using (JsonDocument doc = JsonDocument.Parse(jsonString))
+                        {
+                            JsonElement json = doc.RootElement;
+                            human = ToHuman(json);
+                        }
                     }                
                 }
                 else
@@ -293,8 +301,12 @@ namespace TeamGPT.Services
         {
             string name = humanData.GetProperty("name").GetString();
             string background = humanData.GetProperty("background").GetString();
+            
             List<string> skills = humanData.GetProperty("skills").EnumerateArray().Select(item => item.GetString()).ToList();
-            List<string> knowledgeDomains = humanData.GetProperty("knowledgeDomains").EnumerateArray().Select(item => item.GetString()).ToList();
+            
+            // Adjusting the property name to match the case in the JSON
+            List<string> knowledgeDomains = humanData.GetProperty("knowledgedomains").EnumerateArray().Select(item => item.GetString()).ToList();
+            
             List<string> proclivities = humanData.GetProperty("proclivities").EnumerateArray().Select(item => item.GetString()).ToList();
 
             var persona = new Persona

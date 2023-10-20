@@ -10,14 +10,14 @@ namespace TeamGPT.Models
 {
     public class Human : Agent
     {
-        private Brain Brain;  // This is the human's cognitive interface, allowing for complex thought.
+        private Brain Brain => Cognition as Brain;  // This is the human's cognitive interface, allowing for complex thought.
         public Team Team { get; private set; }
 
         public Human(ApplicationSettings settings, string name, Persona persona)
             : base(settings, name)  // Call the base constructor of Agent class
         {
-            // Initialize the Brain, which will be the human's thinking mechanism.
-            this.Brain = new Brain(_settings, this, persona);
+            // Initialize the Brain, which will be the human's thinking mechanism
+            this.Cognition = new Brain(settings, this, persona);
             this.Goals = new List<Goal>();
             
             _logger.Log(Logger.CustomLogLevel.Information, Name, "I'm alive and reporting for duty!");
