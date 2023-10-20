@@ -135,6 +135,55 @@ namespace TeamGPT.Services
             return thoughts;
         }
 
+        public async Task<OpenAI.ObjectModels.ResponseModels.ChatCompletionCreateResponse> ChooseFunction(List<FunctionDefinition> functions, string goal_description)
+        {
+            OpenAI.ObjectModels.ResponseModels.ChatCompletionCreateResponse completionResult  = null;
+
+            IOpenAIService sdk = bedalgoAiService;
+
+            try
+            {
+                completionResult = await sdk.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+                {
+                    Messages = new List<OpenAI.ObjectModels.RequestModels.ChatMessage>
+                    {
+                        OpenAI.ObjectModels.RequestModels.ChatMessage.FromSystem("Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."),
+                        OpenAI.ObjectModels.RequestModels.ChatMessage.FromUser($"Choose the best function for this goal: '{goal_description}'")
+                    },
+                    Functions = functions,
+                    // optionally, to force a specific function:
+                    // FunctionCall = new Dictionary<string, string> { { "name", "get_team_members" } },
+                    MaxTokens = 500,
+                    Model = OpenAI.ObjectModels.Models.Gpt_4
+                });
+
+                if (completionResult.Successful)
+                {
+                    var choice = completionResult.Choices.First();
+                    var fn = choice.Message.FunctionCall;
+                    if (fn != null)
+                    {
+                        Console.WriteLine($"Function call: {fn.Name}");
+                    }
+                }
+                else
+                {
+                    if (completionResult.Error == null)
+                    {
+                        throw new Exception("Unknown Error");
+                    }
+
+                    Console.WriteLine($"{completionResult.Error.Code}: {completionResult.Error.Message}");
+                }            
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+            return completionResult;
+        }
+
         public async Task<Team> DefineTeamFunction(string team_directive)
         {
             // Create the new team

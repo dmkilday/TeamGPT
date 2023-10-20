@@ -9,6 +9,15 @@ namespace TeamGPT.Models
     {
         public Persona Persona { get; private set; }
 
+        public enum DecisionOptions
+        {
+            DoWorkThemselves,
+            GatherInformationThenWork,
+            CollaborateWithOthers,
+            DecomposeIntoSubGoals,
+            Delegate
+        }
+
         public Brain(ApplicationSettings settings, Human owner, Persona persona) 
             : base(settings, owner)  // Calling the base constructor
         {
