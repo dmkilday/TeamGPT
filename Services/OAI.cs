@@ -10,6 +10,8 @@ using OpenAI.Interfaces;
 using OpenAI.Managers;
 using System.ComponentModel;
 using System.Text.Json;
+using TeamGPT.Activities;
+using System.Reflection;
 
 namespace TeamGPT.Services
 {
@@ -135,8 +137,14 @@ namespace TeamGPT.Services
             return thoughts;
         }
 
-        public async Task<OpenAI.ObjectModels.ResponseModels.ChatCompletionCreateResponse> ChooseFunction(List<FunctionDefinition> functions, string goal_description)
+        public async Task<OpenAI.ObjectModels.ResponseModels.ChatCompletionCreateResponse> ChooseFunction(List<FunctionDefinition> functions, string instruction)
         {
+            List<OpenAI.ObjectModels.RequestModels.FunctionDefinition> OAIfunctions = new();
+            foreach (var function in functions)
+            {
+                OAIfunctions.Add(ToOAIFunctionDefinition(function));
+            }
+
             OpenAI.ObjectModels.ResponseModels.ChatCompletionCreateResponse completionResult  = null;
 
             IOpenAIService sdk = bedalgoAiService;
@@ -147,12 +155,14 @@ namespace TeamGPT.Services
                 {
                     Messages = new List<OpenAI.ObjectModels.RequestModels.ChatMessage>
                     {
-                        OpenAI.ObjectModels.RequestModels.ChatMessage.FromSystem("Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."),
-                        OpenAI.ObjectModels.RequestModels.ChatMessage.FromUser($"Choose the best function for this goal: '{goal_description}'")
+                        OpenAI.ObjectModels.RequestModels.ChatMessage.FromSystem("You are an artificial brain in a work simulation. It's your job to choose the best function from the list provided."),
+                        OpenAI.ObjectModels.RequestModels.ChatMessage.FromUser($"From the functions provided, choose the best function for this instruction: '{instruction}'")
                     },
-                    Functions = functions,
+                    Functions = OAIfunctions,
                     // optionally, to force a specific function:
-                    // FunctionCall = new Dictionary<string, string> { { "name", "get_team_members" } },
+                    //FunctionCall = new Dictionary<string, string> { { "name", "do_work" }, { "name", "decompose_work" } },
+                    FunctionCall = "auto",
+                    Temperature = 0,
                     MaxTokens = 500,
                     Model = OpenAI.ObjectModels.Models.Gpt_4
                 });
@@ -182,6 +192,69 @@ namespace TeamGPT.Services
                 throw;
             }
             return completionResult;
+        }
+
+        public static void PrintPropertiesRecursive(object obj, string indent)
+        {
+            if (obj == null) return;
+
+            Type type = obj.GetType();
+
+            PropertyInfo[] properties = type.GetProperties();
+            foreach (var property in properties)
+            {
+                object value = property.GetValue(obj);
+
+                // Check if the property value is a primitive or a string. 
+                // If not, it's considered a complex object and we recurse into it.
+                if (value == null || value is string || value.GetType().IsPrimitive)
+                {
+                    Console.WriteLine($"{indent}Property Name: {property.Name}, Value: {value}");
+                }
+                else
+                {
+                    Console.WriteLine($"{indent}Object Property: {property.Name}");
+                    PrintPropertiesRecursive(value, indent + "  ");
+                }
+            }
+        }
+
+        public OpenAI.ObjectModels.RequestModels.FunctionDefinition ToOAIFunctionDefinition(Services.FunctionDefinition fd)
+        {
+            OpenAI.Builders.FunctionDefinitionBuilder oaiFunctionDefinition = new FunctionDefinitionBuilder(fd.Name, fd.Description); 
+
+            ////// Determine type of function and convert //////
+            
+            // Convert Do work function
+            if (fd.Type == FunctionDefinition.FunctionType.Do)
+            {
+                oaiFunctionDefinition
+                    .AddParameter("work_outcome", PropertyDefinition.DefineString("The outcome of the work done."));
+            }
+            // Convert Decomposition function
+            else if (fd.Type == FunctionDefinition.FunctionType.Decompose)
+            {
+                // Define the structure of the Goal object
+                var goalDefinition = PropertyDefinition.DefineObject(
+                    new Dictionary<string, PropertyDefinition>
+                    {
+                        { "Description", PropertyDefinition.DefineString("The description of the goal.") },
+                        { "Priority", PropertyDefinition.DefineString("The priority of the goal. This must be a decimal between 0 and 1, where 0 is the lowest priority and 1 is the highest.") }
+                    },
+                    required: new List<string> { "Description", "Priority" },
+                    additionalProperties: false,
+                    description: "Represents the attributes of a goal.",
+                    @enum: null // Provide null for enum if it's not applicable
+                );
+                // Use the Goal object definition as a parameter for the get_team_members function
+                oaiFunctionDefinition
+                    .AddParameter("goals", PropertyDefinition.DefineArray(goalDefinition));
+            }
+
+            // Validate and build the function defintion
+            return oaiFunctionDefinition
+                    .Validate()
+                    .Build();
         }
 
         public async Task<Team> DefineTeamFunction(string team_directive)
@@ -231,7 +304,7 @@ namespace TeamGPT.Services
                         OpenAI.ObjectModels.RequestModels.ChatMessage.FromSystem("Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."),
                         OpenAI.ObjectModels.RequestModels.ChatMessage.FromUser($"Create the optimatel team to complete the objective: '{team_directive}'")
                     },
-                    Functions = new List<FunctionDefinition> {fn1, fn2},
+                    Functions = new List<OpenAI.ObjectModels.RequestModels.FunctionDefinition> {fn1, fn2},
                     // optionally, to force a specific function:
                     FunctionCall = new Dictionary<string, string> { { "name", "get_team_members" } },
                     MaxTokens = 500,
@@ -300,7 +373,7 @@ namespace TeamGPT.Services
                         OpenAI.ObjectModels.RequestModels.ChatMessage.FromSystem("Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."),
                         OpenAI.ObjectModels.RequestModels.ChatMessage.FromUser($"Find the optimal team member to complete the objective: '{directive}'")
                     },
-                    Functions = new List<FunctionDefinition> {fn1},
+                    Functions = new List<OpenAI.ObjectModels.RequestModels.FunctionDefinition> {fn1},
                     // optionally, to force a specific function:
                     FunctionCall = new Dictionary<string, string> { { "name", "get_team_member" } },
                     MaxTokens = 500,
@@ -425,7 +498,7 @@ namespace TeamGPT.Services
                         OpenAI.ObjectModels.RequestModels.ChatMessage.FromSystem("Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous."),
                         OpenAI.ObjectModels.RequestModels.ChatMessage.FromUser("Give me a weather report for Chicago, USA, for the next 5 days.")
                     },
-                    Functions = new List<FunctionDefinition> {fn1, fn2, fn3, fn4},
+                    Functions = new List<OpenAI.ObjectModels.RequestModels.FunctionDefinition> {fn1, fn2, fn3, fn4},
                     // optionally, to force a specific function:
                     // FunctionCall = new Dictionary<string, string> { { "name", "get_current_weather" } },
                     MaxTokens = 50,

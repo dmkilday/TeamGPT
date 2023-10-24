@@ -84,10 +84,12 @@ namespace TeamGPT
 
             // Create objective & default assignment to 1st team member in the list
             Goal goal = new(appSettings, null, conceiver: me, description: main_directive, 0.5);
-            Human assignee = await me.DefineTeamMember(goal);
+            Human assignee = new(appSettings, "John Assignee", engineer);
+            //Human assignee = await me.DefineTeamMember(goal);
             Console.WriteLine(assignee);
             //Human assignee = team.Members[0];
             me.Assign(goal, assignee);
+            
             
             // Cleanup the log
             Log.CloseAndFlush();

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+using OpenAI.ObjectModels.SharedModels;
 using Serilog;
 using System.Dynamic;
 using System.Linq;
@@ -20,6 +22,7 @@ namespace TeamGPT.Models
         public abstract void ReceiveAssignment(Goal goal);
         public abstract Task<string> Think(string input);
         public abstract override string ToString();
+        public abstract void Choose(Goal goal);
 
         public Agent(ApplicationSettings settings, string name)
         {
@@ -33,17 +36,17 @@ namespace TeamGPT.Models
             _logger.ConfigureLogFile(_logFilePath);       
         }
 
+        public Agent(ApplicationSettings settings)
+        {
+            this._settings = settings;
+            this._logger = settings.LoggerInstance;
+            ID = getID();  
+        }
+
         // Get ID from AgentManager
         private int getID()
         {
             return 1;
-        }
-
-        // Assign a task to another human
-        public void Assign(Goal goal, Human assignee)
-        {
-            assignee.ReceiveAssignment(goal);
-            assignee.Work();
         }
 
         // Get the highest priority task available to the human
@@ -81,7 +84,7 @@ namespace TeamGPT.Models
             return sub_goals;
         }
 
-        private Goal Pick()
+        protected Goal Pick()
         {
             Goal nextGoal = null;
 
@@ -97,25 +100,8 @@ namespace TeamGPT.Models
             return nextGoal;
         }
 
-        // Start working on the objective
-        private void Work()
-        {
-            // Grab the next goal from my to-do list
-            // and distinguish it as my CurrentGoal
-            this.CurrentGoal = Pick();
-
-            // If the goal is legit and incomplete, do it!
-            if (this.CurrentGoal != null)
-            {
-                if (!this.CurrentGoal.IsMet)
-                {
-                    this.Do(CurrentGoal);
-                }
-            }
-        }
-
         // Execute the objective
-        private void Do(Activities.Goal goal)
+        protected void Do(Activities.Goal goal)
         {
             goal.Activate();
             
